@@ -1,0 +1,13 @@
+ {
+  "manifest_version": 2,
+  "name": "Subadub",
+  "description" : "Enhanced Netflix subtitles for foreign language study",
+  "version": "1.0",
+  "content_scripts": [
+    {
+      "matches": ["https://www.netflix.com/*"],
+      "run_at": "document_end",
+      "js": ["content_script.js"]
+    }
+  ]
+ }
