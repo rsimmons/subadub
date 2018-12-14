@@ -110,7 +110,7 @@ el.text = `
 
     function addSubsList(tracks) {
       const selectElem = document.createElement('select');
-      selectElem.style.cssText = 'position: absolute; z-index: 1000; top: 10px; right: 10px; color: black; font-size: 16px';
+      selectElem.style.cssText = 'color: black; margin: 5px';
       selectElem.addEventListener('change', function(e) {
         handleSubsListSetOrChange(e.target);
         renderAndReconcile();
@@ -131,10 +131,57 @@ el.text = `
         selectElem.value = firstCCTrackId;
       }
 
+      const downloadButtonElem = document.createElement('button');
+      downloadButtonElem.textContent = 'Download';
+      downloadButtonElem.style.cssText = 'color: black; margin: 5px; border: none';
+      downloadButtonElem.addEventListener('click', function(e) {
+        function formatTime(t) {
+          const date = new Date(0, 0, 0, 0, 0, 0, t*1000);
+          const hours = date.getHours().toString().padStart(2, '0');
+          const minutes = date.getMinutes().toString().padStart(2, '0');
+          const seconds = date.getSeconds().toString().padStart(2, '0');
+          const ms = date.getMilliseconds().toString().padStart(3, '0');
+
+          return hours + ':' + minutes + ':' + seconds + ',' + ms;
+        }
+
+        e.preventDefault();
+        console.log('download click');
+
+        const trackElem = document.getElementById(TRACK_ELEM_ID);
+        if (!trackElem || !trackElem.track || !trackElem.track.cues) {
+          return;
+        }
+
+        const srtChunks = [];
+        let idx = 1;
+        for (const cue of trackElem.track.cues) {
+          srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cue.text + '\\n\\n');
+          idx++;
+        }
+
+        const srtBlob = new Blob(srtChunks, { type: 'text/srt' });
+        const srtUrl = URL.createObjectURL(srtBlob);
+        const srtName = 'foo.srt';
+
+        const tmpElem = document.createElement('a');
+        tmpElem.setAttribute('href', srtUrl);
+        tmpElem.setAttribute('download', srtName);
+        tmpElem.style.display = 'none';
+        document.body.appendChild(tmpElem);
+        tmpElem.click();
+        document.body.removeChild(tmpElem);
+      }, false);
+
+      const panelElem = document.createElement('div');
+      panelElem.style.cssText = 'position: absolute; z-index: 1000; top: 0; right: 0; font-size: 16px; color: white';
+      panelElem.appendChild(selectElem);
+      panelElem.appendChild(downloadButtonElem);
+
       const containerElem = document.createElement('div');
       containerElem.id = SUBS_LIST_ELEM_ID;
       containerElem.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; right: 0; bottom: 0; left: 0';
-      containerElem.appendChild(selectElem);
+      containerElem.appendChild(panelElem);
 
       document.body.appendChild(containerElem);
 
