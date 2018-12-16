@@ -68,6 +68,18 @@ el.text = `
     renderAndReconcile();
   }
 
+  function getSelectedTrackInfo() {
+    if (!urlMovieId || !selectedTrackId) {
+      throw new Error('Internal error, getSelectedTrackInfo called but urlMovieId or selectedTrackId is null');
+    }
+    const trackList = trackListCache.get(urlMovieId);
+    const matchingTracks = trackList.filter(el => el.id === selectedTrackId);
+    if (matchingTracks.length !== 1) {
+      throw new Error('internal error, no matching track id');
+    }
+    return matchingTracks[0];
+  }
+
   function handleSubsListSetOrChange(selectElem) {
     const trackId = selectElem.value;
     console.log('selecting track', trackId);
@@ -78,16 +90,9 @@ el.text = `
       return;
     }
 
-    const movieId = urlMovieId; // this seems a bit hacky to get this way, but should be OK
-    const trackList = trackListCache.get(movieId);
-    const matchingTracks = trackList.filter(el => el.id === trackId);
-    if (matchingTracks.length !== 1) {
-      throw new Error('internal error, no matching track id');
-    }
-    const trackInfo = matchingTracks[0];
-
-    const cacheKey = movieId + '/' + trackInfo.id;
+    const cacheKey = urlMovieId + '/' + selectedTrackId;
     if (!webvttCache.has(cacheKey)) {
+      const trackInfo = getSelectedTrackInfo();
       const url = trackInfo.bestUrl;
 
       fetch(url).then(function(response) {
@@ -138,6 +143,22 @@ el.text = `
       return;
     }
 
+    // Figure out video title
+    const srtFilenamePieces = [];
+    for (const elem of document.querySelectorAll('.video-title *')) {
+      if (!elem.firstElementChild && elem.textContent) { // only get 'leaf' elements with text
+        srtFilenamePieces.push(elem.textContent);
+      }
+    }
+    let srcFilename;
+    if (srtFilenamePieces.length) {
+      srtFilename = srtFilenamePieces.join('-');
+    } else {
+      srtFilename = urlMovieId.toString(); // fallback in case UI changes
+    }
+    srtFilename += '_' + trackElem.srclang; // append language code
+    srtFilename += '.srt';
+
     const srtChunks = [];
     let idx = 1;
     for (const cue of trackElem.track.cues) {
@@ -147,11 +168,10 @@ el.text = `
 
     const srtBlob = new Blob(srtChunks, { type: 'text/srt' });
     const srtUrl = URL.createObjectURL(srtBlob);
-    const srtName = 'foo.srt';
 
     const tmpElem = document.createElement('a');
     tmpElem.setAttribute('href', srtUrl);
-    tmpElem.setAttribute('download', srtName);
+    tmpElem.setAttribute('download', srtFilename);
     tmpElem.style.display = 'none';
     document.body.appendChild(tmpElem);
     tmpElem.click();
@@ -216,12 +236,13 @@ el.text = `
       }
     }
 
-    function addTrackElem(videoElem, blob) {
+    function addTrackElem(videoElem, blob, srclang) {
       const trackElem = document.createElement('track');
       trackElem.id = TRACK_ELEM_ID;
       trackElem.src = URL.createObjectURL(blob);
       trackElem.kind = 'subtitles';
       trackElem.default = true;
+      trackElem.srclang = srclang;
       // trackElem.mode = 'showing';
       videoElem.appendChild(trackElem);
 
@@ -277,7 +298,9 @@ el.text = `
 
       removeTrackElem();
       if (targetTrackBlob) {
-        addTrackElem(videoElem, targetTrackBlob);
+        // NOTE: super hacky to get the language code this way
+        const languageCode = getSelectedTrackInfo().language;
+        addTrackElem(videoElem, targetTrackBlob, languageCode);
       }
 
       displayedTrackBlob = targetTrackBlob;
