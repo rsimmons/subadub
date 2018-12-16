@@ -157,7 +157,7 @@ el.text = `
     } else {
       srtFilename = urlMovieId.toString(); // fallback in case UI changes
     }
-    srtFilename += '_' + trackElem.srclang; // append language code
+    srtFilename += '_' + trackElem.track.language; // append language code
     srtFilename += '.srt';
 
     const srtChunks = [];
