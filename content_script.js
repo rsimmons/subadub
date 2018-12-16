@@ -63,9 +63,6 @@ el.text = `
     renderAndReconcile();
   }
 
-  function fetchWebvtt(movieId, trackInfo) {
-  }
-
   function handleSubsListSetOrChange(selectElem) {
     const trackId = selectElem.value;
     console.log('selecting track', trackId);
