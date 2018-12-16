@@ -7,6 +7,11 @@ el.text = `
   const POLL_INTERVAL_MS = 500;
   const WEBVTT_FMT = 'webvtt-lssdh-ios8';
   const URL_MOVIEID_REGEX = RegExp('/watch/([0-9]+)');
+
+  const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
+  const TRACK_ELEM_ID = 'subadub-track';
+  const DOWNLOAD_BUTTON_ID = 'subadub-download';
+
   const trackListCache = new Map(); // from movie ID to list of available tracks
   const webvttCache = new Map(); // from 'movieID/trackID' to blob
   let urlMovieId;
@@ -101,10 +106,23 @@ el.text = `
     // NOTE: We don't call renderAndReconcile here, caller should do it to avoid recursive loop bug
   }
 
-  function renderAndReconcile() {
-    const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
-    const TRACK_ELEM_ID = 'subadub-track';
+  function enableDownloadButton() {
+    const downloadButtonElem = document.getElementById(DOWNLOAD_BUTTON_ID);
+    if (downloadButtonElem) {
+      downloadButtonElem.style.color = 'black';
+      downloadButtonElem.disabled = false;
+    }
+  }
 
+  function disableDownloadButton() {
+    const downloadButtonElem = document.getElementById(DOWNLOAD_BUTTON_ID);
+    if (downloadButtonElem) {
+      downloadButtonElem.style.color = 'grey';
+      downloadButtonElem.disabled = true;
+    }
+  }
+
+  function renderAndReconcile() {
     function addSubsList(tracks) {
       const selectElem = document.createElement('select');
       selectElem.style.cssText = 'color: black; margin: 5px';
@@ -129,8 +147,9 @@ el.text = `
       }
 
       const downloadButtonElem = document.createElement('button');
+      downloadButtonElem.id = DOWNLOAD_BUTTON_ID;
       downloadButtonElem.textContent = 'Download SRT';
-      downloadButtonElem.style.cssText = 'color: black; margin: 5px; border: none';
+      downloadButtonElem.style.cssText = 'margin: 5px; border: none';
       downloadButtonElem.addEventListener('click', function(e) {
         function formatTime(t) {
           const date = new Date(0, 0, 0, 0, 0, 0, t*1000);
@@ -182,6 +201,8 @@ el.text = `
 
       document.body.appendChild(containerElem);
 
+      disableDownloadButton();
+
       handleSubsListSetOrChange(selectElem);
     }
 
@@ -200,6 +221,10 @@ el.text = `
       trackElem.default = true;
       // trackElem.mode = 'showing';
       videoElem.appendChild(trackElem);
+
+      trackElem.addEventListener('load', function() {
+        enableDownloadButton();
+      }, false);
     }
 
     function removeTrackElem() {
@@ -207,6 +232,8 @@ el.text = `
       if (el) {
         el.remove();
       }
+
+      disableDownloadButton();
     }
 
     // Determine what subs list should be
