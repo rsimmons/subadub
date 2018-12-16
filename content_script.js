@@ -122,6 +122,42 @@ el.text = `
     }
   }
 
+  function downloadSRT() {
+    function formatTime(t) {
+      const date = new Date(0, 0, 0, 0, 0, 0, t*1000);
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const seconds = date.getSeconds().toString().padStart(2, '0');
+      const ms = date.getMilliseconds().toString().padStart(3, '0');
+
+      return hours + ':' + minutes + ':' + seconds + ',' + ms;
+    }
+
+    const trackElem = document.getElementById(TRACK_ELEM_ID);
+    if (!trackElem || !trackElem.track || !trackElem.track.cues) {
+      return;
+    }
+
+    const srtChunks = [];
+    let idx = 1;
+    for (const cue of trackElem.track.cues) {
+      srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cue.text + '\\n\\n');
+      idx++;
+    }
+
+    const srtBlob = new Blob(srtChunks, { type: 'text/srt' });
+    const srtUrl = URL.createObjectURL(srtBlob);
+    const srtName = 'foo.srt';
+
+    const tmpElem = document.createElement('a');
+    tmpElem.setAttribute('href', srtUrl);
+    tmpElem.setAttribute('download', srtName);
+    tmpElem.style.display = 'none';
+    document.body.appendChild(tmpElem);
+    tmpElem.click();
+    document.body.removeChild(tmpElem);
+  }
+
   function renderAndReconcile() {
     function addSubsList(tracks) {
       const selectElem = document.createElement('select');
@@ -151,42 +187,9 @@ el.text = `
       downloadButtonElem.textContent = 'Download SRT';
       downloadButtonElem.style.cssText = 'margin: 5px; border: none';
       downloadButtonElem.addEventListener('click', function(e) {
-        function formatTime(t) {
-          const date = new Date(0, 0, 0, 0, 0, 0, t*1000);
-          const hours = date.getHours().toString().padStart(2, '0');
-          const minutes = date.getMinutes().toString().padStart(2, '0');
-          const seconds = date.getSeconds().toString().padStart(2, '0');
-          const ms = date.getMilliseconds().toString().padStart(3, '0');
-
-          return hours + ':' + minutes + ':' + seconds + ',' + ms;
-        }
-
         e.preventDefault();
         console.log('download click');
-
-        const trackElem = document.getElementById(TRACK_ELEM_ID);
-        if (!trackElem || !trackElem.track || !trackElem.track.cues) {
-          return;
-        }
-
-        const srtChunks = [];
-        let idx = 1;
-        for (const cue of trackElem.track.cues) {
-          srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cue.text + '\\n\\n');
-          idx++;
-        }
-
-        const srtBlob = new Blob(srtChunks, { type: 'text/srt' });
-        const srtUrl = URL.createObjectURL(srtBlob);
-        const srtName = 'foo.srt';
-
-        const tmpElem = document.createElement('a');
-        tmpElem.setAttribute('href', srtUrl);
-        tmpElem.setAttribute('download', srtName);
-        tmpElem.style.display = 'none';
-        document.body.appendChild(tmpElem);
-        tmpElem.click();
-        document.body.removeChild(tmpElem);
+        downloadSRT();
       }, false);
 
       const panelElem = document.createElement('div');
