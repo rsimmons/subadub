@@ -132,7 +132,7 @@ el.text = `
       }
 
       const downloadButtonElem = document.createElement('button');
-      downloadButtonElem.textContent = 'Download';
+      downloadButtonElem.textContent = 'Download SRT';
       downloadButtonElem.style.cssText = 'color: black; margin: 5px; border: none';
       downloadButtonElem.addEventListener('click', function(e) {
         function formatTime(t) {
