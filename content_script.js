@@ -7,6 +7,7 @@ el.text = `
   const POLL_INTERVAL_MS = 500;
   const WEBVTT_FMT = 'webvtt-lssdh-ios8';
   const URL_MOVIEID_REGEX = RegExp('/watch/([0-9]+)');
+  const CLASS_TAG_REGEX = RegExp('</?c\\.([^>]*)>', 'ig'); // NOTE: backslash escaped due to literal
 
   const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
   const TRACK_ELEM_ID = 'subadub-track';
@@ -162,7 +163,8 @@ el.text = `
     const srtChunks = [];
     let idx = 1;
     for (const cue of trackElem.track.cues) {
-      srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cue.text + '\\n\\n');
+      const cleanedText = cue.text.replace(CLASS_TAG_REGEX, '');
+      srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cleanedText + '\\n\\n');
       idx++;
     }
 
