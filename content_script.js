@@ -377,6 +377,21 @@ el.text = `
 
     renderAndReconcile();
   }, POLL_INTERVAL_MS);
+
+  document.body.addEventListener('keydown', function(e) {
+    if ((e.keyCode === 67) && !e.altKey && !e.ctrlKey && !e.metaKey) { // unmodified C key
+      console.log('copying subs text to clipboard';
+      const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
+      if (subsElem) {
+        const pieces = [];
+        for (child of [...subsElem.children]) {
+          pieces.push(child.textContent); // copy as plain text
+        }
+        const text = pieces.join('\\n');
+        navigator.clipboard.writeText(text);
+      }
+    }
+  }, true);
 })();
 `;
 document.head.insertBefore(el, document.head.firstChild);
