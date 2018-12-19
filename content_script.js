@@ -12,6 +12,7 @@ el.text = `
   const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
   const TRACK_ELEM_ID = 'subadub-track';
   const DOWNLOAD_BUTTON_ID = 'subadub-download';
+  const CUSTOM_SUBS_ELEM_ID = 'subadub-custom-subs';
 
   const trackListCache = new Map(); // from movie ID to list of available tracks
   const webvttCache = new Map(); // from 'movieID/trackID' to blob
@@ -245,18 +246,45 @@ el.text = `
       trackElem.kind = 'subtitles';
       trackElem.default = true;
       trackElem.srclang = srclang;
-      // trackElem.mode = 'showing';
       videoElem.appendChild(trackElem);
+      trackElem.track.mode = 'hidden'; // this can only be set after appending
 
       trackElem.addEventListener('load', function() {
         enableDownloadButton();
       }, false);
+
+      const customSubsElem = document.createElement('div');
+      customSubsElem.id = CUSTOM_SUBS_ELEM_ID;
+      customSubsElem.style.cssText = 'position: absolute; bottom: 20vh; left: 0; right: 0; color: white; font-size: 3vw; text-align: center; user-select: text; z-index: 100';
+
+      trackElem.addEventListener('cuechange', function(e) {
+        // Remove all children
+        while (customSubsElem.firstChild) {
+          customSubsElem.removeChild(customSubsElem.firstChild);
+        }
+
+        const track = e.target.track;
+        console.log('active now', track.activeCues);
+        for (const cue of track.activeCues) {
+          const cueElem = document.createElement('div');
+          cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content';
+          cueElem.appendChild(cue.getCueAsHTML());
+          customSubsElem.appendChild(cueElem);
+        }
+      }, false);
+
+      document.body.appendChild(customSubsElem);
     }
 
     function removeTrackElem() {
-      const el = document.getElementById(TRACK_ELEM_ID);
-      if (el) {
-        el.remove();
+      const trackElem = document.getElementById(TRACK_ELEM_ID);
+      if (trackElem) {
+        trackElem.remove();
+      }
+
+      const customSubsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
+      if (customSubsElem) {
+        customSubsElem.remove();
       }
 
       disableDownloadButton();
