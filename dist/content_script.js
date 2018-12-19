@@ -10,6 +10,7 @@ el.text = `
   const CLASS_TAG_REGEX = RegExp('</?c\\.([^>]*)>', 'ig'); // NOTE: backslash escaped due to literal
 
   const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
+  const TOGGLE_DISPLAY_BUTTON_ID = 'subadub-toggle-display';
   const TRACK_ELEM_ID = 'subadub-track';
   const DOWNLOAD_BUTTON_ID = 'subadub-download';
   const CUSTOM_SUBS_ELEM_ID = 'subadub-custom-subs';
@@ -18,6 +19,7 @@ el.text = `
   const webvttCache = new Map(); // from 'movieID/trackID' to blob
   let urlMovieId;
   let selectedTrackId;
+  let showSubsState = true;
   
   let targetSubsList = null;
   let displayedSubsList = null;
@@ -181,8 +183,36 @@ el.text = `
     document.body.removeChild(tmpElem);
   }
 
+  function updateToggleDisplay() {
+    const buttomElem = document.getElementById(TOGGLE_DISPLAY_BUTTON_ID);
+    if (buttomElem) {
+      if (showSubsState) {
+        buttomElem.textContent = 'Hide Subs [S]';
+      } else {
+        buttomElem.textContent = 'Show Subs [S]';
+      }
+    }
+    const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
+    if (subsElem) {
+      if (showSubsState) {
+        subsElem.style.visibility = 'visible';
+      } else {
+        subsElem.style.visibility = 'hidden';
+      }
+    }
+  }
+
   function renderAndReconcile() {
     function addSubsList(tracks) {
+      const toggleDisplayButtonElem = document.createElement('button');
+      toggleDisplayButtonElem.id = TOGGLE_DISPLAY_BUTTON_ID;
+      toggleDisplayButtonElem.style.cssText = 'margin: 5px; border: none; color: black; width: 8em';
+      toggleDisplayButtonElem.addEventListener('click', function(e) {
+        e.preventDefault();
+        showSubsState = !showSubsState;
+        updateToggleDisplay();
+      }, false);
+
       const selectElem = document.createElement('select');
       selectElem.style.cssText = 'color: black; margin: 5px';
       selectElem.addEventListener('change', function(e) {
@@ -217,6 +247,7 @@ el.text = `
 
       const panelElem = document.createElement('div');
       panelElem.style.cssText = 'position: absolute; z-index: 1000; top: 0; right: 0; font-size: 16px; color: white';
+      panelElem.appendChild(toggleDisplayButtonElem);
       panelElem.appendChild(selectElem);
       panelElem.appendChild(downloadButtonElem);
 
@@ -227,6 +258,7 @@ el.text = `
 
       document.body.appendChild(containerElem);
 
+      updateToggleDisplay();
       disableDownloadButton();
 
       handleSubsListSetOrChange(selectElem);
@@ -281,6 +313,8 @@ el.text = `
         throw new Error("Couldn't find player element to append subtitles to");
       }
       playerElem.appendChild(customSubsElem);
+
+      updateToggleDisplay();
     }
 
     function removeTrackElem() {
@@ -389,6 +423,11 @@ el.text = `
         }
         const text = pieces.join('\\n');
         navigator.clipboard.writeText(text);
+      }
+    } else if ((e.keyCode === 83) && !e.altKey && !e.ctrlKey && !e.metaKey) { // unmodified S key
+      const el = document.getElementById(TOGGLE_DISPLAY_BUTTON_ID);
+      if (el) {
+        el.click();
       }
     }
   }, false);
