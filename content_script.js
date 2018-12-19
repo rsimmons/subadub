@@ -393,6 +393,15 @@ el.text = `
     }
   }, false);
 
+  let hideSubsListTimeout;
+  function hideSubsListTimerFunc() {
+    const el = document.getElementById(SUBS_LIST_ELEM_ID);
+    if (el) {
+      el.style.display = 'none';
+    }
+    hideSubsListTimeout = null;
+  }
+
   document.body.addEventListener('mousemove', function(e) {
     // If there are any popups, make sure our subs don't block mouse events
     const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
@@ -404,6 +413,16 @@ el.text = `
         subsElem.style.display = 'block';
       }
     }
+
+    // Show subs list and update timer to hide it
+    const subsListElem = document.getElementById(SUBS_LIST_ELEM_ID);
+    if (subsListElem) {
+      subsListElem.style.display = 'block';
+    }
+    if (hideSubsListTimeout) {
+      clearTimeout(hideSubsListTimeout);
+    }
+    hideSubsListTimeout = setTimeout(hideSubsListTimerFunc, 3000);
   }, false);
 })();
 `;
