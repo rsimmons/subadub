@@ -380,7 +380,7 @@ el.text = `
 
   document.body.addEventListener('keydown', function(e) {
     if ((e.keyCode === 67) && !e.altKey && !e.ctrlKey && !e.metaKey) { // unmodified C key
-      console.log('copying subs text to clipboard';
+      console.log('copying subs text to clipboard');
       const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
       if (subsElem) {
         const pieces = [];
