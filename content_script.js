@@ -29,7 +29,7 @@ el.text = `
     const movieId = movieObj.movieId;
 
     const usableTracks = [];
-    console.log('timedtexttracks', movieObj.timedtexttracks);
+    // console.log('timedtexttracks', movieObj.timedtexttracks);
     for (const track of movieObj.timedtexttracks) {
       if (track.isForcedNarrative || track.isNoneTrack) {
         continue; // don't want these
@@ -65,7 +65,7 @@ el.text = `
       });
     }
 
-    console.log('CACHING MOVIE TRACKS', movieId, usableTracks);
+    // console.log('CACHING MOVIE TRACKS', movieId, usableTracks);
     trackListCache.set(movieId, usableTracks);
     renderAndReconcile();
   }
@@ -84,7 +84,7 @@ el.text = `
 
   function handleSubsListSetOrChange(selectElem) {
     const trackId = selectElem.value;
-    console.log('selecting track', trackId);
+    // console.log('selecting track', trackId);
 
     selectedTrackId = trackId;
 
@@ -106,7 +106,7 @@ el.text = `
         webvttCache.set(cacheKey, new Blob([blob], {type: 'text/vtt'})); // set type to avoid warning
         renderAndReconcile();
       }).catch(function(error) {
-        console.log('Failed to fetch WebVTT file', error.message);
+        console.error('Failed to fetch WebVTT file', error.message);
       });
     }
 
@@ -211,7 +211,7 @@ el.text = `
       downloadButtonElem.style.cssText = 'margin: 5px; border: none';
       downloadButtonElem.addEventListener('click', function(e) {
         e.preventDefault();
-        console.log('download click');
+        // console.log('download click');
         downloadSRT();
       }, false);
 
@@ -264,7 +264,7 @@ el.text = `
         }
 
         const track = e.target.track;
-        console.log('active now', track.activeCues);
+        // console.log('active now', track.activeCues);
         for (const cue of track.activeCues) {
           const cueElem = document.createElement('div');
           cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; pointer-events: auto';
@@ -306,7 +306,7 @@ el.text = `
 
     // Reconcile DOM if necessary
     if (targetSubsList !== displayedSubsList) {
-      console.log('updating subs list DOM', targetSubsList, displayedSubsList);
+      // console.log('updating subs list DOM', targetSubsList, displayedSubsList);
 
       removeSubsList();
       if (targetSubsList) {
@@ -331,7 +331,7 @@ el.text = `
 
     // Reconcile DOM if necessary
     if (targetTrackBlob !== displayedTrackBlob) {
-      console.log('need to update track blob', targetTrackBlob, displayedTrackBlob);
+      // console.log('need to update track blob', targetTrackBlob, displayedTrackBlob);
 
       removeTrackElem();
       if (targetTrackBlob) {
@@ -380,7 +380,7 @@ el.text = `
 
   document.body.addEventListener('keydown', function(e) {
     if ((e.keyCode === 67) && !e.altKey && !e.ctrlKey && !e.metaKey) { // unmodified C key
-      console.log('copying subs text to clipboard');
+      // console.log('copying subs text to clipboard');
       const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
       if (subsElem) {
         const pieces = [];
