@@ -391,7 +391,20 @@ el.text = `
         navigator.clipboard.writeText(text);
       }
     }
-  }, true);
+  }, false);
+
+  document.body.addEventListener('mousemove', function(e) {
+    // If there are any popups, make sure our subs don't block mouse events
+    const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
+    if (subsElem) {
+      const popup = document.querySelector('.popup-content');
+      if (popup) {
+        subsElem.style.display = 'none';
+      } else {
+        subsElem.style.display = 'block';
+      }
+    }
+  }, false);
 })();
 `;
 document.head.insertBefore(el, document.head.firstChild);
