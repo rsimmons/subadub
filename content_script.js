@@ -273,7 +273,14 @@ el.text = `
         }
       }, false);
 
-      document.body.appendChild(customSubsElem);
+      // Appending this to the player rather than the document fixes some issues:
+      // 1) Clicking on subtitle text doesn't take focus (keyboard events) away from player
+      // 2) Hover on subtitle prevents the "sleep" title screen from coming up, which is nice
+      const playerElem = document.querySelector('.NFPlayer');
+      if (!playerElem) {
+        throw new Error("Couldn't find player element to append subtitles to");
+      }
+      playerElem.appendChild(customSubsElem);
     }
 
     function removeTrackElem() {
