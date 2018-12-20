@@ -287,7 +287,7 @@ el.text = `
 
       const customSubsElem = document.createElement('div');
       customSubsElem.id = CUSTOM_SUBS_ELEM_ID;
-      customSubsElem.style.cssText = 'position: absolute; bottom: 20vh; left: 0; right: 0; color: white; font-size: 3vw; text-align: center; user-select: text; z-index: 100; pointer-events: none';
+      customSubsElem.style.cssText = 'position: absolute; bottom: 20vh; left: 0; right: 0; color: white; font-size: 3vw; text-align: center; user-select: text; -moz-user-select: text; z-index: 100; pointer-events: none';
 
       trackElem.addEventListener('cuechange', function(e) {
         // Remove all children
@@ -299,7 +299,7 @@ el.text = `
         // console.log('active now', track.activeCues);
         for (const cue of track.activeCues) {
           const cueElem = document.createElement('div');
-          cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; pointer-events: auto';
+          cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; width: -moz-fit-content; pointer-events: auto';
           cueElem.appendChild(cue.getCueAsHTML());
           customSubsElem.appendChild(cueElem);
         }
