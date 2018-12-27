@@ -8,6 +8,8 @@ el.text = `
   const WEBVTT_FMT = 'webvtt-lssdh-ios8';
   const URL_MOVIEID_REGEX = RegExp('/watch/([0-9]+)');
   const CLASS_TAG_REGEX = RegExp('</?c\\.([^>]*)>', 'ig'); // NOTE: backslash escaped due to literal
+  const RLM_REGEX = RegExp('\u200f', 'ig');
+  const RLM_ESCAPE_REGEX = RegExp('&rlm;', 'ig');
 
   const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
   const TOGGLE_DISPLAY_BUTTON_ID = 'subadub-toggle-display';
@@ -26,6 +28,16 @@ el.text = `
 
   let targetTrackBlob = null;
   let displayedTrackBlob = null;
+
+  function recursivelyTransformNodeText(node, transformer) {
+    if (node.nodeType === node.TEXT_NODE) {
+      node.data = transformer(node.data);
+    } else if (node.hasChildNodes()) {
+      for (const child of [...node.childNodes]) {
+        recursivelyTransformNodeText(child, transformer);
+      }
+    }
+  }
 
   function extractMovieTextTracks(movieObj) {
     const movieId = movieObj.movieId;
@@ -166,7 +178,8 @@ el.text = `
     const srtChunks = [];
     let idx = 1;
     for (const cue of trackElem.track.cues) {
-      const cleanedText = cue.text.replace(CLASS_TAG_REGEX, '');
+      // NOTE: Replacing &rlm; with RLE (0x202b) fixes exported SRT for Arabic being loaded into VLC
+      const cleanedText = cue.text.replace(CLASS_TAG_REGEX, '').replace(RLM_ESCAPE_REGEX, '\u202b');
       srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cleanedText + '\\n\\n');
       idx++;
     }
@@ -301,6 +314,8 @@ el.text = `
           const cueElem = document.createElement('div');
           cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; width: -moz-fit-content; pointer-events: auto';
           cueElem.appendChild(cue.getCueAsHTML());
+          // NOTE: Transforming RLM to RLE fixes punctuation in Arabic subs
+          recursivelyTransformNodeText(cueElem, s => s.replace(RLM_REGEX, '\u202b'));
           customSubsElem.appendChild(cueElem);
         }
       }, false);
