@@ -1,15 +1,26 @@
 
 // console.log('content script starting');
 
-const el = document.createElement('script');
-el.text = `
+const styleElem = document.createElement('style');
+styleElem.type = 'text/css';
+styleElem.textContent = `
+
+#subadub-custom-subs .arabic,
+#subadub-custom-subs .hebrew {
+  direction: rtl;
+  unicode-bidi: isolate;
+}
+
+`;
+document.head.insertBefore(styleElem, document.head.firstChild);
+
+
+const scriptElem = document.createElement('script');
+scriptElem.text = `
 (function initializeSubadub() {
   const POLL_INTERVAL_MS = 500;
   const WEBVTT_FMT = 'webvtt-lssdh-ios8';
   const URL_MOVIEID_REGEX = RegExp('/watch/([0-9]+)');
-  const CLASS_TAG_REGEX = RegExp('</?c\\.([^>]*)>', 'ig'); // NOTE: backslash escaped due to literal
-  const RLM_REGEX = RegExp('\u200f', 'ig');
-  const RLM_ESCAPE_REGEX = RegExp('&rlm;', 'ig');
 
   const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
   const TOGGLE_DISPLAY_BUTTON_ID = 'subadub-toggle-display';
@@ -28,16 +39,6 @@ el.text = `
 
   let targetTrackBlob = null;
   let displayedTrackBlob = null;
-
-  function recursivelyTransformNodeText(node, transformer) {
-    if (node.nodeType === node.TEXT_NODE) {
-      node.data = transformer(node.data);
-    } else if (node.hasChildNodes()) {
-      for (const child of [...node.childNodes]) {
-        recursivelyTransformNodeText(child, transformer);
-      }
-    }
-  }
 
   function extractMovieTextTracks(movieObj) {
     const movieId = movieObj.movieId;
@@ -144,6 +145,12 @@ el.text = `
   }
 
   function downloadSRT() {
+    const RLM_ESCAPE_REGEX = RegExp('&rlm;', 'ig');
+    const LRM_ESCAPE_REGEX = RegExp('&lrm;', 'ig');
+    const CLASS_TAG_REGEX = RegExp('</?c\\.([^>]*)>', 'ig'); // NOTE: backslash escaped due to literal
+    const OPEN_RTL_CLASS_TAG_REGEX = RegExp('<c\\.(arabic|hebrew)>', 'ig');
+    const CLOSE_RTL_CLASS_TAG_REGEX = RegExp('</c\\.(arabic|hebrew)>', 'ig');
+
     function formatTime(t) {
       const date = new Date(0, 0, 0, 0, 0, 0, t*1000);
       const hours = date.getHours().toString().padStart(2, '0');
@@ -178,8 +185,12 @@ el.text = `
     const srtChunks = [];
     let idx = 1;
     for (const cue of trackElem.track.cues) {
-      // NOTE: Replacing &rlm; with RLE (0x202b) fixes exported SRT for Arabic being loaded into VLC
-      const cleanedText = cue.text.replace(CLASS_TAG_REGEX, '').replace(RLM_ESCAPE_REGEX, '\u202b');
+      const cleanedText = cue.text
+        .replace(LRM_ESCAPE_REGEX, '\u200e') // replace escape sequence with unicode char
+        .replace(RLM_ESCAPE_REGEX, '\u200f') // replace escape sequence with unicode char
+        .replace(OPEN_RTL_CLASS_TAG_REGEX, '\u202b') // replace opening of RTL lang class tag with RLE character
+        .replace(CLOSE_RTL_CLASS_TAG_REGEX, '\u202c') // replace closing of RTL lang class tag with PDF character
+        .replace(CLASS_TAG_REGEX, ''); // strip out other class tags
       srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cleanedText + '\\n\\n');
       idx++;
     }
@@ -314,8 +325,6 @@ el.text = `
           const cueElem = document.createElement('div');
           cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; width: -moz-fit-content; pointer-events: auto';
           cueElem.appendChild(cue.getCueAsHTML());
-          // NOTE: Transforming RLM to RLE fixes punctuation in Arabic subs
-          recursivelyTransformNodeText(cueElem, s => s.replace(RLM_REGEX, '\u202b'));
           customSubsElem.appendChild(cueElem);
         }
       }, false);
@@ -480,6 +489,6 @@ el.text = `
   }, false);
 })();
 `;
-document.head.insertBefore(el, document.head.firstChild);
+document.head.insertBefore(scriptElem, document.head.firstChild);
 
 // console.log('content script finished');
