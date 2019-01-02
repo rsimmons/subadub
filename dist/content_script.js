@@ -4,13 +4,6 @@
 const styleElem = document.createElement('style');
 styleElem.type = 'text/css';
 styleElem.textContent = `
-
-#subadub-custom-subs .arabic,
-#subadub-custom-subs .hebrew {
-  direction: rtl;
-  unicode-bidi: isolate;
-}
-
 `;
 document.head.insertBefore(styleElem, document.head.firstChild);
 
@@ -39,6 +32,36 @@ scriptElem.text = `
 
   let targetTrackBlob = null;
   let displayedTrackBlob = null;
+
+  // Convert WebVTT text to plain text plus "simple" tags (allowed in SRT)
+  const TAG_REGEX = RegExp('</?([^>]*)>', 'ig');
+  function vttTextToSimple(s, netflixRTLFix) {
+    let simpleText = s;
+
+    // strip tags except simple ones
+    simpleText = simpleText.replace(TAG_REGEX, function (match, p1) {
+      return ['i', 'u', 'b'].includes(p1.toLowerCase()) ? match : '';
+    });
+
+    if (netflixRTLFix) {
+      // For each line, if it starts with lrm or rlm escape, wrap in LRE/RLE/PDF pair.
+      // This is weird, but needed for compatibility with Netflix. See issue #1.
+      const lines = simpleText.split('\\n');
+      const newLines = [];
+      for (const line of lines) {
+        if (line.startsWith('&lrm;')) {
+          newLines.push('\u202a' + line.slice(5) + '\u202c');
+        } else if (line.startsWith('&rlm;')) {
+          newLines.push('\u202b' + line.slice(5) + '\u202c');
+        } else {
+          newLines.push(line);
+        }
+      }
+      simpleText = newLines.join('\\n');
+    }
+
+    return simpleText;
+  }
 
   function extractMovieTextTracks(movieObj) {
     const movieId = movieObj.movieId;
@@ -145,12 +168,6 @@ scriptElem.text = `
   }
 
   function downloadSRT() {
-    const RLM_ESCAPE_REGEX = RegExp('&rlm;', 'ig');
-    const LRM_ESCAPE_REGEX = RegExp('&lrm;', 'ig');
-    const CLASS_TAG_REGEX = RegExp('</?c\\.([^>]*)>', 'ig'); // NOTE: backslash escaped due to literal
-    const OPEN_RTL_CLASS_TAG_REGEX = RegExp('<c\\.(arabic|hebrew)>', 'ig');
-    const CLOSE_RTL_CLASS_TAG_REGEX = RegExp('</c\\.(arabic|hebrew)>', 'ig');
-
     function formatTime(t) {
       const date = new Date(0, 0, 0, 0, 0, 0, t*1000);
       const hours = date.getHours().toString().padStart(2, '0');
@@ -185,12 +202,7 @@ scriptElem.text = `
     const srtChunks = [];
     let idx = 1;
     for (const cue of trackElem.track.cues) {
-      const cleanedText = cue.text
-        .replace(LRM_ESCAPE_REGEX, '\u200e') // replace escape sequence with unicode char
-        .replace(RLM_ESCAPE_REGEX, '\u200f') // replace escape sequence with unicode char
-        .replace(OPEN_RTL_CLASS_TAG_REGEX, '\u202b') // replace opening of RTL lang class tag with RLE character
-        .replace(CLOSE_RTL_CLASS_TAG_REGEX, '\u202c') // replace closing of RTL lang class tag with PDF character
-        .replace(CLASS_TAG_REGEX, ''); // strip out other class tags
+      const cleanedText = vttTextToSimple(cue.text, true);
       srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cleanedText + '\\n\\n');
       idx++;
     }
@@ -324,7 +336,7 @@ scriptElem.text = `
         for (const cue of track.activeCues) {
           const cueElem = document.createElement('div');
           cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; width: -moz-fit-content; pointer-events: auto';
-          cueElem.appendChild(cue.getCueAsHTML());
+          cueElem.innerHTML = vttTextToSimple(cue.text, true); // may contain simple tags like <i> etc.
           customSubsElem.appendChild(cueElem);
         }
       }, false);
