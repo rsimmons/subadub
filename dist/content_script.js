@@ -387,7 +387,8 @@ scriptElem.text = `
     }
 
     // Determine what subs blob should be
-    const videoElem = document.querySelector('video');
+    const videoElems = document.querySelectorAll('video');
+    const videoElem = videoElems[videoElems.length - 1]; // Add the last video to be appended
     if (urlMovieId && selectedTrackId && videoElem) {
       const cacheKey = urlMovieId + '/' + selectedTrackId;
       if (webvttCache.has(cacheKey)) {
