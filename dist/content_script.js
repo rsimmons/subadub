@@ -420,6 +420,9 @@ scriptElem.text = `
       value.params.profiles.unshift(WEBVTT_FMT);
       // console.log('stringify', value);
     }
+    if (value && value.ab && value.ab.profiles) {
+      value.ab.profiles.unshift(WEBVTT_FMT);
+    }
     return originalStringify.apply(this, arguments);
   };
 
