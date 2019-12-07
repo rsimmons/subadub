@@ -17,7 +17,7 @@
     }
   ],
   "web_accessible_resources": [
-    "subadub.js",
-    "subadub.css"
+    "subadub.css",
+    "icon48.png"
   ]
 }

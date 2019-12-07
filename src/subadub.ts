@@ -1,3 +1,5 @@
+declare const __subadub_icon: string;
+
 function initializeSubadub() {
   console.info('Initializing Subadub');
 
@@ -57,7 +59,7 @@ function initializeSubadub() {
     const movieId = movieObj.movieId;
 
     const usableTracks = [];
-    console.log('timedtexttracks', movieObj.timedtexttracks);
+    // console.log('timedtexttracks', movieObj.timedtexttracks);
     for (const track of movieObj.timedtexttracks) {
       if (track.isForcedNarrative || track.isNoneTrack) {
         continue; // don't want these
@@ -93,7 +95,7 @@ function initializeSubadub() {
       });
     }
 
-    console.log('CACHING MOVIE TRACKS', movieId, usableTracks);
+    // console.log('CACHING MOVIE TRACKS', movieId, usableTracks);
     trackListCache.set(movieId, usableTracks);
     renderAndReconcile();
   }
@@ -112,7 +114,7 @@ function initializeSubadub() {
 
   function handleSubsListSetOrChange(selectElem) {
     const trackId = selectElem.value;
-    console.log('selecting track', trackId);
+    // console.log('selecting track', trackId);
 
     selectedTrackId = trackId;
 
@@ -144,7 +146,8 @@ function initializeSubadub() {
   function enableDownloadButton() {
     const downloadButtonElem = document.getElementById(DOWNLOAD_BUTTON_ID) as HTMLButtonElement;
     if (downloadButtonElem) {
-      downloadButtonElem.style.color = 'black';
+      downloadButtonElem.classList.add('subadub-btn');
+      downloadButtonElem.classList.add('subadub-btn--download');
       downloadButtonElem.disabled = false;
     }
   }
@@ -152,7 +155,6 @@ function initializeSubadub() {
   function disableDownloadButton() {
     const downloadButtonElem = document.getElementById(DOWNLOAD_BUTTON_ID) as HTMLButtonElement;
     if (downloadButtonElem) {
-      downloadButtonElem.style.color = 'grey';
       downloadButtonElem.disabled = true;
     }
   }
@@ -203,6 +205,7 @@ function initializeSubadub() {
     const tmpElem = document.createElement('a');
     tmpElem.setAttribute('href', srtUrl);
     tmpElem.setAttribute('download', srtFilename);
+    tmpElem.classList.add('subadub-tmp-el');
     tmpElem.style.display = 'none';
     document.body.appendChild(tmpElem);
     tmpElem.click();
@@ -213,26 +216,31 @@ function initializeSubadub() {
     const buttomElem = document.getElementById(TOGGLE_DISPLAY_BUTTON_ID);
     if (buttomElem) {
       if (showSubsState) {
-        buttomElem.textContent = 'Hide Subs [S]';
+        buttomElem.textContent = 'Hide Subs';
       } else {
-        buttomElem.textContent = 'Show Subs [S]';
+        buttomElem.textContent = 'Show Subs';
       }
     }
     const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
     if (subsElem) {
       if (showSubsState) {
-        subsElem.style.visibility = 'visible';
+        subsElem.classList.remove('subadub-invisible');
       } else {
-        subsElem.style.visibility = 'hidden';
+        subsElem.classList.add('subadub-iinvisible');
       }
     }
   }
 
   function renderAndReconcile() {
     function addSubsList(tracks) {
+      const iconElem = document.createElement('img');
+      iconElem.classList.add('subadub-icon');
+      iconElem.src = __subadub_icon;
+
       const toggleDisplayButtonElem = document.createElement('button');
       toggleDisplayButtonElem.id = TOGGLE_DISPLAY_BUTTON_ID;
-      toggleDisplayButtonElem.style.cssText = 'margin: 5px; border: none; color: black; width: 8em';
+      toggleDisplayButtonElem.classList.add('subadub-btn');
+      toggleDisplayButtonElem.classList.add('subadub-btn--toggle-display');
       toggleDisplayButtonElem.addEventListener('click', function(e) {
         e.preventDefault();
         showSubsState = !showSubsState;
@@ -240,7 +248,7 @@ function initializeSubadub() {
       }, false);
 
       const selectElem = document.createElement('select');
-      selectElem.style.cssText = 'color: black; margin: 5px';
+      selectElem.classList.add('subadub-select');
       selectElem.addEventListener('change', function(e) {
         handleSubsListSetOrChange(e.target);
         renderAndReconcile();
@@ -264,22 +272,24 @@ function initializeSubadub() {
       const downloadButtonElem = document.createElement('button');
       downloadButtonElem.id = DOWNLOAD_BUTTON_ID;
       downloadButtonElem.textContent = 'Download SRT';
-      downloadButtonElem.style.cssText = 'margin: 5px; border: none';
+      downloadButtonElem.classList.add('subadub-btn');
+      downloadButtonElem.classList.add('subadub-btn--download-srt');
       downloadButtonElem.addEventListener('click', function(e) {
         e.preventDefault();
-        console.log('download click');
+        // console.log('download click');
         downloadSRT();
       }, false);
 
       const panelElem = document.createElement('div');
-      panelElem.style.cssText = 'position: absolute; z-index: 1000; top: 0; right: 0; font-size: 16px; color: white';
+      panelElem.classList.add('subadub-panel');
+      panelElem.appendChild(iconElem);
       panelElem.appendChild(toggleDisplayButtonElem);
       panelElem.appendChild(selectElem);
       panelElem.appendChild(downloadButtonElem);
 
       const containerElem = document.createElement('div');
       containerElem.id = SUBS_LIST_ELEM_ID;
-      containerElem.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; right: 0; bottom: 0; left: 0';
+      containerElem.classList.add('subadub-container');
       containerElem.appendChild(panelElem);
 
       document.body.appendChild(containerElem);
@@ -312,8 +322,8 @@ function initializeSubadub() {
       }, false);
 
       const customSubsElem = document.createElement('div');
+      customSubsElem.classList.add('subadub-custom-subs');
       customSubsElem.id = CUSTOM_SUBS_ELEM_ID;
-      customSubsElem.style.cssText = 'position: absolute; bottom: 20vh; left: 0; right: 0; color: white; font-size: 3vw; text-align: center; user-select: text; -moz-user-select: text; z-index: 100; pointer-events: none';
 
       trackElem.addEventListener('cuechange', (e) => {
         // Remove all children
@@ -322,10 +332,10 @@ function initializeSubadub() {
         }
 
         const track = (e.target as HTMLTrackElement).track;
-        console.log('active now', track.activeCues);
+        // console.log('active now', track.activeCues);
         for (const cue of track.activeCues) {
           const cueElem = document.createElement('div');
-          cueElem.style.cssText = 'background: rgba(0,0,0,0.8); white-space: pre-wrap; padding: 0.2em 0.3em; margin: 10px auto; width: fit-content; width: -moz-fit-content; pointer-events: auto';
+          cueElem.classList.add('subadub-active-cues');
           cueElem.innerHTML = vttTextToSimple(cue.text, true); // may contain simple tags like <i> etc.
           customSubsElem.appendChild(cueElem);
         }
@@ -366,7 +376,7 @@ function initializeSubadub() {
 
     // Reconcile DOM if necessary
     if (targetSubsList !== displayedSubsList) {
-      console.log('updating subs list DOM', targetSubsList, displayedSubsList);
+      // console.log('updating subs list DOM', targetSubsList, displayedSubsList);
 
       removeSubsList();
       if (targetSubsList) {
@@ -391,7 +401,7 @@ function initializeSubadub() {
 
     // Reconcile DOM if necessary
     if (targetTrackBlob !== displayedTrackBlob) {
-      console.log('need to update track blob', targetTrackBlob, displayedTrackBlob);
+      // console.log('need to update track blob', targetTrackBlob, displayedTrackBlob);
 
       removeTrackElem();
       if (targetTrackBlob) {
@@ -402,6 +412,28 @@ function initializeSubadub() {
 
       displayedTrackBlob = targetTrackBlob;
     }
+  }
+
+  const originalStringify = JSON.stringify;
+  JSON.stringify = function(value) {
+    if (value && value.params && value.params.profiles) {
+      value.params.profiles.unshift(WEBVTT_FMT);
+      // console.log('stringify', value);
+    }
+    if (value && value.ab && value.ab.profiles) {
+      value.ab.profiles.unshift(WEBVTT_FMT);
+    }
+    return originalStringify.apply(this, arguments);
+  };
+
+  const originalParse = JSON.parse;
+  JSON.parse = function() {
+    const value = originalParse.apply(this, arguments);
+    if (value && value.result && value.result.movieId && value.result.timedtexttracks) {
+      // console.log('parse', value);
+      extractMovieTextTracks(value.result);
+    }
+    return value;
   }
 
   // Poll periodically to see if current movie has changed
@@ -421,7 +453,7 @@ function initializeSubadub() {
 
   document.body.addEventListener('keydown', function(e) {
     if ((e.keyCode === 67) && !e.altKey && !e.ctrlKey && !e.metaKey) { // unmodified C key
-      console.log('copying subs text to clipboard');
+      // console.log('copying subs text to clipboard');
       const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID) as HTMLDivElement;
       if (subsElem) {
         const pieces = [];
@@ -443,7 +475,7 @@ function initializeSubadub() {
   function hideSubsListTimerFunc() {
     const el = document.getElementById(SUBS_LIST_ELEM_ID);
     if (el) {
-      el.style.display = 'none';
+      el.classList.add('subadub-hidden');
     }
     hideSubsListTimeout = null;
   }
@@ -454,16 +486,16 @@ function initializeSubadub() {
     if (subsElem) {
       const popup = document.querySelector('.popup-content');
       if (popup) {
-        subsElem.style.display = 'none';
+        subsElem.classList.add('subadub-hidden');
       } else {
-        subsElem.style.display = 'block';
+        subsElem.classList.remove('subadub-hidden');
       }
     }
 
     // Show subs list and update timer to hide it
     const subsListElem = document.getElementById(SUBS_LIST_ELEM_ID);
     if (subsListElem) {
-      subsListElem.style.display = 'block';
+      subsListElem.classList.remove('subadub-hidden');
     }
     if (hideSubsListTimeout) {
       clearTimeout(hideSubsListTimeout);

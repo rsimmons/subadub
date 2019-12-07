@@ -11,6 +11,8 @@ import rawSubadub from 'raw-loader!./subadub';
   const scriptElem = document.createElement('script');
   scriptElem.type = 'text/javascript';
   scriptElem.id = 'subadub-script';
-  scriptElem.innerHTML = rawSubadub;
+  scriptElem.innerHTML = `
+  __subadub_icon = '${chrome.runtime.getURL("icon48.png")}';
+  ${rawSubadub}`;
   document.head.insertBefore(scriptElem, document.head.firstChild);
 })();

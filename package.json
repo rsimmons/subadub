@@ -4,7 +4,7 @@
   "description": "Enhanced Netflix subtitles for foreign language study",
   "main": "dist/content_script.js",
   "scripts": {
-    "build": "tsc && cp src/subadub.css res/* dist/"
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
