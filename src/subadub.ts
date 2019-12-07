@@ -226,7 +226,7 @@ function initializeSubadub() {
       if (showSubsState) {
         subsElem.classList.remove('subadub-invisible');
       } else {
-        subsElem.classList.add('subadub-iinvisible');
+        subsElem.classList.add('subadub-invisible');
       }
     }
   }
