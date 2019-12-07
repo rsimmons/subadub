@@ -4,7 +4,8 @@
   "description": "Enhanced Netflix subtitles for foreign language study",
   "main": "dist/content_script.js",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "archive": "bash ./archive.sh"
   },
   "repository": {
     "type": "git",
@@ -24,7 +25,6 @@
     "ts-loader": "^6.2.1",
     "typescript": "^3.7.3",
     "webpack": "^4.41.2",
-    "webpack-cli": "^3.3.10",
-    "webpack-merge": "^4.2.2"
+    "webpack-cli": "^3.3.10"
   }
 }

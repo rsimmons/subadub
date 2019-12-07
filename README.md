@@ -12,8 +12,10 @@ Subadub is a browser extension for Chrome and Firefox that enhances Netflix subt
 
 ## Process to Publish a New Version
 
-- make changes to dist/content_script.js
-- bump version number in dist/manifest.json
+- run `npm install`
+- make changes to `src/`
+- run `npm run build`
+- bump version number in `res/manifest.json`
 - (best to commit+push these changes, but not required)
-- run archive.sh to produce new subadub.zip
-- upload subadub.zip to Chrome Web Store (https://chrome.google.com/webstore/developer/dashboard) and Firefox Add-on Developer Hub (https://addons.mozilla.org/en-US/developers/)
+- run `npm run archive` to produce new `subadub.zip`
+- upload `subadub.zip` to Chrome Web Store (https://chrome.google.com/webstore/developer/dashboard) and Firefox Add-on Developer Hub (https://addons.mozilla.org/en-US/developers/)
