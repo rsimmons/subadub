@@ -1,0 +1,30 @@
+{
+  "name": "subadub",
+  "version": "0.1.5",
+  "description": "Enhanced Netflix subtitles for foreign language study",
+  "main": "dist/content_script.js",
+  "scripts": {
+    "build": "webpack",
+    "archive": "bash ./archive.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rsimmons/subadub.git"
+  },
+  "author": "Russel Simmons",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rsimmons/subadub/issues"
+  },
+  "homepage": "https://github.com/rsimmons/subadub#readme",
+  "devDependencies": {
+    "@types/chrome": "0.0.91",
+    "@types/node": "^12.12.14",
+    "copy-webpack-plugin": "^5.0.5",
+    "raw-loader": "^4.0.0",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.3",
+    "webpack": "^4.41.2",
+    "webpack-cli": "^3.3.10"
+  }
+}

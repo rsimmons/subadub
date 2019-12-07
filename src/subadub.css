@@ -1,0 +1,108 @@
+.subadub-btn, .subadub-select {
+  background: white;
+  color: black;
+  border: 0;
+  font-weight: bold;
+  margin: 0.75em 0 0.75em 0.75em;
+  padding: 0.57em 1.35em;
+  text-transform: uppercase;
+  border-radius: 0;
+}
+
+.subadub-btn[disabled] {
+  color: grey;
+}
+
+.subadub-btn:focus, .subadub-select:focus {
+  outline: 2px solid #80b8e8;
+}
+
+.subadub-btn--toggle-display {
+  border: none;
+  white-space: nowrap;
+}
+
+.subadub-select {
+  color: black;
+  -webkit-appearance: button;
+  -moz-appearance: button;
+}
+
+.subadub-btn--download-srt {
+  border: none;
+}
+
+.subadub-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 1.0vw;
+  font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: white;
+  background-color: #615d5d57;
+  padding: 0 0.75em;
+  pointer-events: all;
+}
+
+.subadub-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  opacity: 1;
+  transition: opacity 150ms ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.subadub-container.subadub-hidden {
+  opacity: 0;
+}
+
+.subadub-custom-subs {
+  position: absolute;
+  bottom: 20vh;
+  left: 0;
+  right: 0;
+  color: white;
+  font-size: 3vw;
+  text-align: center;
+  user-select: text;
+  -moz-user-select: text;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.subadub-active-cues {
+  background: rgba(0, 0, 0, 0.8);
+  white-space: pre-wrap;
+  padding: 0.2em 0.3em;
+  margin: 10px auto;
+  width: fit-content;
+  width: -moz-fit-content;
+  pointer-events: auto;
+}
+
+.subadub-custom-subs {
+  display: block;
+}
+
+.subadub-custom-subs.subadub-hidden {
+  display: none;
+}
+
+.subadub-custom-subs.subadub-invisible {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.subadub-icon {
+  height: 30px;
+  font-size: 0;
+  display: inline-block;
+  padding-bottom: 4px;
+  vertical-align: middle;
+}

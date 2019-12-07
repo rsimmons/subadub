@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "esnext",
+    "lib": ["DOM", "DOM.Iterable", "esnext"],
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "noFallthroughCasesInSwitch": true,
+    "sourceMap": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "noEmitOnError": true,
+    "typeRoots": ["node_modules/@types", "src/types"]
+  }
+}
