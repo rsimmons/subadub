@@ -13,6 +13,7 @@ scriptElem.text = `
 (function initializeSubadub() {
   const POLL_INTERVAL_MS = 500;
   const WEBVTT_FMT = 'webvtt-lssdh-ios8';
+  const MANIFEST_URL = "/manifest";
   const URL_MOVIEID_REGEX = RegExp('/watch/([0-9]+)');
 
   const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
@@ -416,13 +417,15 @@ scriptElem.text = `
 
   const originalStringify = JSON.stringify;
   JSON.stringify = function(value) {
-    if (value && value.params && value.params.profiles) {
-      value.params.profiles.unshift(WEBVTT_FMT);
-      // console.log('stringify', value);
-    }
-    if (value && value.ab && value.ab.profiles) {
-      value.ab.profiles.unshift(WEBVTT_FMT);
-    }
+    if (value && value.url === MANIFEST_URL) {
+        for (let key in value) {
+            const prop = value[key];
+            if (prop.profiles) {
+                prop.profiles.unshift(WEBVTT_FMT);
+                break;
+            }
+		}	
+	}
     return originalStringify.apply(this, arguments);
   };
 
