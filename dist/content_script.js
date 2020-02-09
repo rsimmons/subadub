@@ -86,7 +86,7 @@ scriptElem.text = `
       if (!webvttDL || !webvttDL.downloadUrls) {
         continue;
       }
-      debugger
+
       const bestUrl = getBestAvailableUrl({
         urls: webvttDL.downloadUrls,
         cdnList: track.cdnlist
