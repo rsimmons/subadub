@@ -76,8 +76,7 @@ scriptElem.text = `
 
       if (!track.cdnlist || !track.cdnlist.length) {
         continue;
-      }
-      const firstCdnId = track.cdnlist[0].id;
+      }  
 
       if (!track.ttDownloadables) {
         continue;
@@ -88,7 +87,11 @@ scriptElem.text = `
         continue;
       }
 
-      const bestUrl = webvttDL.downloadUrls[firstCdnId];
+      const bestUrl = getBestAvailableUrl({
+        urls: webvttDL.downloadUrls,
+        cdnList: track.cdnlist
+      })
+
       if (!bestUrl) {
         continue;
       }
@@ -107,6 +110,11 @@ scriptElem.text = `
     // console.log('CACHING MOVIE TRACKS', movieId, usableTracks);
     trackListCache.set(movieId, usableTracks);
     renderAndReconcile();
+  }
+
+  function getBestAvailableUrl({ urls, cdnList }) {
+    const { id: bestAvailableCDN } = cdnList.find((cdn) => urls[cdn.id])
+    return urls[bestAvailableCDN]
   }
 
   function getSelectedTrackInfo() {
