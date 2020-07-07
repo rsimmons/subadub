@@ -22,6 +22,22 @@ scriptElem.text = `
   const DOWNLOAD_BUTTON_ID = 'subadub-download';
   const CUSTOM_SUBS_ELEM_ID = 'subadub-custom-subs';
 
+  const NETFLIX_PROFILES = [
+    'heaac-2-dash',
+    'heaac-2hq-dash',
+    'playready-h264mpl30-dash',
+    'playready-h264mpl31-dash',
+    'playready-h264hpl30-dash',
+    'playready-h264hpl31-dash',
+    'vp9-profile0-L30-dash-cenc',
+    'vp9-profile0-L31-dash-cenc',
+    'dfxp-ls-sdh',
+    'simplesdh',
+    'nflx-cmisc',
+    'BIF240',
+    'BIF320'
+  ]
+
   const trackListCache = new Map(); // from movie ID to list of available tracks
   const webvttCache = new Map(); // from 'movieID/trackID' to blob
   let urlMovieId;
@@ -423,18 +439,35 @@ scriptElem.text = `
     }
   }
 
-  const originalStringify = JSON.stringify;
-  JSON.stringify = function(value) {
-    if (value && value.url === MANIFEST_URL) {
-      // Try not to hardcode property names here because Netflix 
-      // changes them a lot; search instead.
-      for (let key in value) {
-          const prop = value[key];
-          if (prop.profiles) {
-              prop.profiles.unshift(WEBVTT_FMT);
-              break;
+  function isSubtitlesProperty(key, value) {
+    return key === 'profiles' || value.some(item => NETFLIX_PROFILES.includes(item)) 
+  }
+
+  function findSubtitlesProperty(obj) {
+    for (let key in obj) {
+      let value = obj[key];
+      if (Array.isArray(value)) {
+          if (isSubtitlesProperty(key, value)) {
+              return value;
           }
       }
+      if (typeof value === 'object') {
+        const prop = findSubtitlesProperty(value);
+        if (prop) {
+            return prop;
+        }
+      }
+    }
+    return null;
+  }
+
+  const originalStringify = JSON.stringify;
+  JSON.stringify = function(value) {
+    // Don't hardcode property names here because Netflix 
+    // changes them a lot; search instead
+    let prop = findSubtitlesProperty(value);
+    if (prop) {
+      prop.unshift(WEBVTT_FMT);
     }
     return originalStringify.apply(this, arguments);
   };
