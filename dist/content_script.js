@@ -14,7 +14,6 @@ scriptElem.text = `
   const POLL_INTERVAL_MS = 500;
   const MANIFEST_URL = "/manifest";
   const WEBVTT_FMT = 'webvtt-lssdh-ios8';
-  const URL_MOVIEID_REGEX = RegExp('/watch/([0-9]+)');
 
   const SUBS_LIST_ELEM_ID = 'subadub-subs-list';
   const TOGGLE_DISPLAY_BUTTON_ID = 'subadub-toggle-display';
@@ -40,10 +39,10 @@ scriptElem.text = `
 
   const trackListCache = new Map(); // from movie ID to list of available tracks
   const webvttCache = new Map(); // from 'movieID/trackID' to blob
-  let urlMovieId;
+  let urlMovieId; // this is mis-named now, it's pulled from the HTML
   let selectedTrackId;
   let showSubsState = true;
-  
+
   let targetSubsList = null;
   let displayedSubsList = null;
 
@@ -92,7 +91,7 @@ scriptElem.text = `
 
       if (!track.cdnlist || !track.cdnlist.length) {
         continue;
-      }  
+      }
 
       if (!track.ttDownloadables) {
         continue;
@@ -440,7 +439,7 @@ scriptElem.text = `
   }
 
   function isSubtitlesProperty(key, value) {
-    return key === 'profiles' || value.some(item => NETFLIX_PROFILES.includes(item)) 
+    return key === 'profiles' || value.some(item => NETFLIX_PROFILES.includes(item))
   }
 
   function findSubtitlesProperty(obj) {
@@ -463,7 +462,7 @@ scriptElem.text = `
 
   const originalStringify = JSON.stringify;
   JSON.stringify = function(value) {
-    // Don't hardcode property names here because Netflix 
+    // Don't hardcode property names here because Netflix
     // changes them a lot; search instead
     let prop = findSubtitlesProperty(value);
     if (prop) {
@@ -484,12 +483,16 @@ scriptElem.text = `
 
   // Poll periodically to see if current movie has changed
   setInterval(function() {
-    const movieIdMatch = URL_MOVIEID_REGEX.exec(window.location.pathname);
-    let movieId;
-    if (movieIdMatch) {
-      movieId = +movieIdMatch[1];
+    let videoId;
+    const videoContainerElem = document.querySelector('.VideoContainer');
+    if (videoContainerElem) {
+      const dsetIdStr = videoContainerElem.dataset.videoid;
+      if (dsetIdStr) {
+        videoId = +dsetIdStr;
+      }
     }
-    urlMovieId = movieId;
+
+    urlMovieId = videoId;
     if (!urlMovieId) {
       selectedTrackId = null;
     }
