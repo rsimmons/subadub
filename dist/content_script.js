@@ -306,14 +306,14 @@ scriptElem.text = `
       }, false);
 
       const panelElem = document.createElement('div');
-      panelElem.style.cssText = 'position: absolute; z-index: 1000; top: 0; right: 0; font-size: 16px; color: white';
+      panelElem.style.cssText = 'position: absolute; z-index: 1000; top: 0; right: 0; font-size: 16px; color: white; pointer-events: auto';
       panelElem.appendChild(toggleDisplayButtonElem);
       panelElem.appendChild(selectElem);
       panelElem.appendChild(downloadButtonElem);
 
       const containerElem = document.createElement('div');
       containerElem.id = SUBS_LIST_ELEM_ID;
-      containerElem.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; right: 0; bottom: 0; left: 0';
+      containerElem.style.cssText = 'width: 100%; height: 100%; position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none';
       containerElem.appendChild(panelElem);
 
       document.body.appendChild(containerElem);
@@ -365,10 +365,8 @@ scriptElem.text = `
         }
       }, false);
 
-      // Appending this to the player rather than the document fixes some issues:
-      // 1) Clicking on subtitle text doesn't take focus (keyboard events) away from player
-      // 2) Hover on subtitle prevents the "sleep" title screen from coming up, which is nice
-      const playerElem = document.querySelector('.NFPlayer');
+      // Appending this to the player rather than the document changes details of behavior.
+      const playerElem = document.querySelector('.watch-video');
       if (!playerElem) {
         throw new Error("Couldn't find player element to append subtitles to");
       }
@@ -484,9 +482,9 @@ scriptElem.text = `
   // Poll periodically to see if current movie has changed
   setInterval(function() {
     let videoId;
-    const videoContainerElem = document.querySelector('.VideoContainer');
-    if (videoContainerElem) {
-      const dsetIdStr = videoContainerElem.dataset.videoid;
+    const videoIdElem = document.querySelector('*[data-videoid]');
+    if (videoIdElem) {
+      const dsetIdStr = videoIdElem.dataset.videoid;
       if (dsetIdStr) {
         videoId = +dsetIdStr;
       }
