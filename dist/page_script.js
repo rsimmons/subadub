@@ -189,20 +189,23 @@
       return;
     }
 
-    // Figure out video title
-    const srtFilenamePieces = [];
-    for (const elem of document.querySelectorAll('.video-title *')) {
-      if (!elem.firstElementChild && elem.textContent) { // only get 'leaf' elements with text
-        srtFilenamePieces.push(elem.textContent);
+    // Figure out video title.
+    let srtFilename;
+    const videoMeta = netflix?.appContext?.state?.playerApp?.getAPI?.()
+                             ?.getVideoMetadataByVideoId(urlMovieId.toString())
+                             ?.getCurrentVideo();
+    if (videoMeta !== undefined) {
+      srtFilename = videoMeta.getTitle();
+      if (videoMeta.isEpisodic()) {
+          const season = `${videoMeta.getSeason()._season.seq}`.padStart(2, '0');
+          const ep = `${videoMeta.getEpisodeNumber()}`.padStart(2, '0');
+          const epTitle = videoMeta.getEpisodeTitle();
+          srtFilename += `.S${season}E${ep}.${epTitle}`;
       }
-    }
-    let srcFilename;
-    if (srtFilenamePieces.length) {
-      srtFilename = srtFilenamePieces.join('-');
     } else {
       srtFilename = urlMovieId.toString(); // fallback in case UI changes
     }
-    srtFilename += '_' + trackElem.track.language; // append language code
+    srtFilename += '.' + trackElem.track.language; // append language code
     srtFilename += '.srt';
 
     const srtChunks = [];
