@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Subadub",
   "description" : "Enhanced Netflix subtitles for foreign language study",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "icons": {
     "16": "icon16.png",
     "48": "icon48.png",
