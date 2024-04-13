@@ -50,7 +50,7 @@
     if (netflixRTLFix) {
       // For each line, if it starts with lrm or rlm escape, wrap in LRE/RLE/PDF pair.
       // This is weird, but needed for compatibility with Netflix. See issue #1.
-      const lines = simpleText.split('\\n');
+      const lines = simpleText.split('\n');
       const newLines = [];
       for (const line of lines) {
         if (line.startsWith('&lrm;')) {
@@ -61,7 +61,7 @@
           newLines.push(line);
         }
       }
-      simpleText = newLines.join('\\n');
+      simpleText = newLines.join('\n');
     }
 
     return simpleText;
@@ -209,7 +209,7 @@
     let idx = 1;
     for (const cue of trackElem.track.cues) {
       const cleanedText = vttTextToSimple(cue.text, true);
-      srtChunks.push(idx + '\\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\\n' + cleanedText + '\\n\\n');
+      srtChunks.push(idx + '\n' + formatTime(cue.startTime) + ' --> ' + formatTime(cue.endTime) + '\n' + cleanedText + '\n\n');
       idx++;
     }
 
@@ -489,7 +489,7 @@
         for (child of [...subsElem.children]) {
           pieces.push(child.textContent); // copy as plain text
         }
-        const text = pieces.join('\\n');
+        const text = pieces.join('\n');
         navigator.clipboard.writeText(text);
       }
     } else if ((e.keyCode === 83) && !e.altKey && !e.ctrlKey && !e.metaKey) { // unmodified S key
