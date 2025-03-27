@@ -8,6 +8,8 @@
   const TRACK_ELEM_ID = 'subadub-track';
   const DOWNLOAD_BUTTON_ID = 'subadub-download';
   const CUSTOM_SUBS_ELEM_ID = 'subadub-custom-subs';
+  const SHORTCUT_A_DROPDOWN_ID = 'subadub-shortcut-a';
+  const SHORTCUT_Z_DROPDOWN_ID = 'subadub-shortcut-z';
 
   const NETFLIX_PROFILES = [
     'heaac-2-dash',
@@ -24,6 +26,64 @@
     'BIF240',
     'BIF320'
   ]
+
+  // Add language shortcut mapping
+  let LANGUAGE_SHORTCUTS = {
+    'a': 'en',  // English
+    'z': 'ko'   // Korean
+  };
+
+  // Store available languages for shortcuts
+  let availableLanguages = new Set();
+
+  function updateLanguageShortcuts() {
+    const shortcutA = document.getElementById(SHORTCUT_A_DROPDOWN_ID);
+    const shortcutZ = document.getElementById(SHORTCUT_Z_DROPDOWN_ID);
+    
+    if (shortcutA && shortcutZ) {
+      LANGUAGE_SHORTCUTS['a'] = shortcutA.value;
+      LANGUAGE_SHORTCUTS['z'] = shortcutZ.value;
+    }
+  }
+
+  function populateLanguageDropdowns(tracks) {
+    // Update available languages set
+    availableLanguages = new Set(tracks.map(track => track.language));
+    
+    // Get or create dropdowns
+    let shortcutADropdown = document.getElementById(SHORTCUT_A_DROPDOWN_ID);
+    let shortcutZDropdown = document.getElementById(SHORTCUT_Z_DROPDOWN_ID);
+    
+    if (!shortcutADropdown || !shortcutZDropdown) {
+      return; // Dropdowns not created yet
+    }
+
+    // Clear existing options
+    shortcutADropdown.innerHTML = '';
+    shortcutZDropdown.innerHTML = '';
+
+    // Add options for each available language
+    availableLanguages.forEach(lang => {
+      const track = tracks.find(t => t.language === lang);
+      const optionText = track.languageDescription + (track.isClosedCaptions ? ' [CC]' : '');
+      
+      // Add to A shortcut dropdown
+      const optionA = document.createElement('option');
+      optionA.value = lang;
+      optionA.textContent = optionText;
+      shortcutADropdown.appendChild(optionA);
+      
+      // Add to Z shortcut dropdown
+      const optionZ = document.createElement('option');
+      optionZ.value = lang;
+      optionZ.textContent = optionText;
+      shortcutZDropdown.appendChild(optionZ);
+    });
+
+    // Set current values
+    shortcutADropdown.value = LANGUAGE_SHORTCUTS['a'];
+    shortcutZDropdown.value = LANGUAGE_SHORTCUTS['z'];
+  }
 
   const trackListCache = new Map(); // from movie ID to list of available tracks
   const webvttCache = new Map(); // from 'movieID/trackID' to blob
@@ -290,11 +350,30 @@
         downloadSRT();
       }, false);
 
+      // Create shortcut dropdowns
+      const shortcutADropdown = document.createElement('select');
+      shortcutADropdown.id = SHORTCUT_A_DROPDOWN_ID;
+      shortcutADropdown.style.cssText = 'color: black; margin: 5px';
+      shortcutADropdown.title = 'Language for A key';
+      shortcutADropdown.addEventListener('change', updateLanguageShortcuts);
+
+      const shortcutZDropdown = document.createElement('select');
+      shortcutZDropdown.id = SHORTCUT_Z_DROPDOWN_ID;
+      shortcutZDropdown.style.cssText = 'color: black; margin: 5px';
+      shortcutZDropdown.title = 'Language for Z key';
+      shortcutZDropdown.addEventListener('change', updateLanguageShortcuts);
+
       const panelElem = document.createElement('div');
       panelElem.style.cssText = 'position: absolute; z-index: 1000; top: 0; right: 0; font-size: 16px; color: white; pointer-events: auto';
       panelElem.appendChild(toggleDisplayButtonElem);
       panelElem.appendChild(selectElem);
       panelElem.appendChild(downloadButtonElem);
+      panelElem.appendChild(document.createElement('br'));
+      panelElem.appendChild(document.createTextNode('Keyboard shortcut "a": '));
+      panelElem.appendChild(shortcutADropdown);
+      panelElem.appendChild(document.createElement('br'));
+      panelElem.appendChild(document.createTextNode('Keyboard shortcut "z": '));
+      panelElem.appendChild(shortcutZDropdown);
 
       const containerElem = document.createElement('div');
       containerElem.id = SUBS_LIST_ELEM_ID;
@@ -305,6 +384,9 @@
 
       updateToggleDisplay();
       disableDownloadButton();
+
+      // Populate the shortcut dropdowns with available languages
+      populateLanguageDropdowns(tracks);
 
       handleSubsListSetOrChange(selectElem);
     }
@@ -483,6 +565,23 @@
     renderAndReconcile();
   }, POLL_INTERVAL_MS);
 
+  function selectTrackByLanguage(languageCode) {
+    if (!urlMovieId || !trackListCache.has(urlMovieId)) {
+      return;
+    }
+
+    const tracks = trackListCache.get(urlMovieId);
+    const matchingTrack = tracks.find(track => track.language === languageCode);
+    
+    if (matchingTrack) {
+      const selectElem = document.querySelector(`#${SUBS_LIST_ELEM_ID} select`);
+      if (selectElem) {
+        selectElem.value = matchingTrack.id;
+        handleSubsListSetOrChange(selectElem);
+      }
+    }
+  }
+
   document.body.addEventListener('keydown', function(e) {
     if ((e.keyCode === 67) && !e.altKey && !e.ctrlKey && !e.metaKey) { // unmodified C key
       // console.log('copying subs text to clipboard');
@@ -499,6 +598,11 @@
       const el = document.getElementById(TOGGLE_DISPLAY_BUTTON_ID);
       if (el) {
         el.click();
+      }
+    } else if (!e.altKey && !e.ctrlKey && !e.metaKey) { // Check for language shortcuts
+      const key = e.key.toLowerCase();
+      if (LANGUAGE_SHORTCUTS[key]) {
+        selectTrackByLanguage(LANGUAGE_SHORTCUTS[key]);
       }
     }
   }, false);
