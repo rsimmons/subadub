@@ -4,6 +4,7 @@ Subadub is a browser extension for Chrome and Firefox that enhances Netflix subt
 
 - Subtitles are displayed as selectable text, so you can copy+paste them to make flash cards and look up words in a dictionary (e.g. using the Yomichan or Rikaikun extensions for Japanese)
 - Full subtitles for a video can be downloaded in SRT format for personal study/review
+- Add keyboard shortcut for quickly changing between subtitle languages 
 
 ## Installation
 
