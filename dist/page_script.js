@@ -71,20 +71,20 @@
     const movieId = movieObj.movieId;
 
     const usableTracks = [];
-    console.log('timedtexttracks', movieObj.timedtexttracks);
-    for (const track of movieObj.timedtexttracks) {
+    console.log('textTracks', movieObj.textTracks);
+    for (const track of movieObj.textTracks) {
       console.log(track.language);
       if (track.isForcedNarrative || track.isNoneTrack) {
         console.log('A');
         continue; // don't want these
       }
 
-      if (!track.ttDownloadables) {
+      if (!track.downloadables) {
         console.log('B');
         continue;
       }
 
-      const webvttDL = track.ttDownloadables[WEBVTT_FMT];
+      const webvttDL = track.downloadables[WEBVTT_FMT];
       console.log('webvttDL', webvttDL);
       if (!webvttDL || !webvttDL.urls) {
         console.log('C');
@@ -101,7 +101,7 @@
       const isClosedCaptions = track.rawTrackType === 'closedcaptions';
 
       usableTracks.push({
-        id: track.new_track_id,
+        id: track.id,
         language: track.language,
         languageDescription: track.languageDescription,
         bestUrl: bestUrl,
@@ -457,7 +457,7 @@
   const originalParse = JSON.parse;
   JSON.parse = function() {
     const value = originalParse.apply(this, arguments);
-    if (value && value.result && value.result.movieId && value.result.timedtexttracks) {
+    if (value && value.result && value.result.movieId && value.result.textTracks) {
       // console.log('parse', value);
       extractMovieTextTracks(value.result);
     }
