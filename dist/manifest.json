@@ -1,8 +1,8 @@
- {
+{
   "manifest_version": 3,
   "name": "Subadub",
-  "description" : "Enhanced Netflix subtitles for foreign language study",
-  "version": "0.1.12",
+  "description": "Enhanced Netflix subtitles for foreign language study",
+  "version": "0.1.13",
   "browser_specific_settings": {
     "gecko": {
       "id": "{e44f8534-9b1e-4d1e-b584-6fa1513c3c42}"
@@ -23,6 +23,7 @@
   "web_accessible_resources": [
     {
       "resources": ["page_script.js"],
-      "matches": ["https://www.netflix.com/*"]}
+      "matches": ["https://www.netflix.com/*"]
+    }
   ]
- }
+}
