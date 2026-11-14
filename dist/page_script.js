@@ -8,6 +8,7 @@
   const TRACK_ELEM_ID = 'subadub-track';
   const DOWNLOAD_BUTTON_ID = 'subadub-download';
   const CUSTOM_SUBS_ELEM_ID = 'subadub-custom-subs';
+  const SHOW_SUBS_STATE_STORAGE_KEY = 'subadub.showSubsState'; 
 
   const NETFLIX_PROFILES = [
     'heaac-2-dash',
@@ -29,7 +30,7 @@
   const webvttCache = new Map(); // from 'movieID/trackID' to blob
   let urlMovieId; // this is mis-named now, it's pulled from the HTML
   let selectedTrackId;
-  let showSubsState = true;
+  let showSubsState = localStorage.getItem(SHOW_SUBS_STATE_STORAGE_KEY) !== 'false';
 
   let targetSubsList = null;
   let displayedSubsList = null;
@@ -255,6 +256,7 @@
       toggleDisplayButtonElem.addEventListener('click', function(e) {
         e.preventDefault();
         showSubsState = !showSubsState;
+        localStorage.setItem(SHOW_SUBS_STATE_STORAGE_KEY, showSubsState);
         updateToggleDisplay();
       }, false);
 
