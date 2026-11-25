@@ -4,6 +4,7 @@
   const DEBUG = false;
 
   const POLL_INTERVAL_MS = 500;
+  const TRACK_REQUEST_TIMEOUT_MS = 10000;
   const MANIFEST_URL = "/manifest";
   const WEBVTT_FMT = 'webvtt-lssdh-ios8';
 
@@ -12,7 +13,9 @@
   const TRACK_ELEM_ID = 'subadub-track';
   const DOWNLOAD_BUTTON_ID = 'subadub-download';
   const CUSTOM_SUBS_ELEM_ID = 'subadub-custom-subs';
+  const SUBS_POSITION_BUTTON_ID = 'subadub-subs-position';
   const SHOW_SUBS_STATE_STORAGE_KEY = 'subadub.showSubsState';
+  const SUBS_POSITION_STORAGE_KEY = 'subadub.subsPosition';
   const PREFERRED_LANGUAGE_STORAGE_KEY = 'subadub.preferredLanguage';
   const PREFERRED_IS_CC_STORAGE_KEY = 'subadub.preferredIsClosedCaptions';
 
@@ -37,6 +40,10 @@
   let urlMovieId; // this is mis-named now, it's pulled from the HTML
   let selectedTrackId;
   let showSubsState = localStorage.getItem(SHOW_SUBS_STATE_STORAGE_KEY) !== 'false';
+  let subsAtTop = localStorage.getItem(SUBS_POSITION_STORAGE_KEY) === 'top';
+
+  const trackRequestAttempts = new Set(); // 'movieID/trackID' we've asked Netflix's player to load
+  let pendingTrackRequest = null; // {movieId, trackId, restoreTrackId, startTime}
 
   let targetSubsList = null;
   let displayedSubsList = null;
@@ -83,6 +90,12 @@
   function extractMovieTextTracks(movieObj) {
     const movieId = movieObj.movieId;
 
+    // Netflix only includes download URLs for a few "recommended" tracks in each response, and
+    // which ones get URLs can change between responses for the same title (see issue #36). So we
+    // list every track, keep any URL we got from an earlier response, and fetch missing ones on
+    // demand (see requestTrackFromNetflix).
+    const previousTracks = trackListCache.get(movieId) || [];
+
     const usableTracks = [];
     debugLog('textTracks', movieObj.textTracks);
     for (const track of movieObj.textTracks) {
@@ -91,22 +104,14 @@
         continue; // don't want these
       }
 
-      if (!track.downloadables) {
-        debugLog(track.language, 'skipped: no downloadables');
-        continue;
-      }
-
-      const webvttDL = track.downloadables[WEBVTT_FMT];
-      if (!webvttDL || !webvttDL.urls) {
-        debugLog(track.language, 'skipped: no WebVTT downloadable', track.downloadables);
-        continue;
-      }
-
-      const bestUrl = webvttDL.urls[0].url;
-
+      const webvttDL = track.downloadables && track.downloadables[WEBVTT_FMT];
+      let bestUrl = (webvttDL && webvttDL.urls && webvttDL.urls[0] && webvttDL.urls[0].url) || null;
       if (!bestUrl) {
-        debugLog(track.language, 'skipped: no WebVTT URL', webvttDL);
-        continue;
+        const previousTrack = previousTracks.find(prev => prev.id === track.id);
+        bestUrl = previousTrack ? previousTrack.bestUrl : null;
+      }
+      if (!bestUrl) {
+        debugLog(track.language, 'no WebVTT URL yet', track.downloadables);
       }
 
       const isClosedCaptions = track.rawTrackType === 'closedcaptions';
@@ -176,6 +181,12 @@
       const trackInfo = getSelectedTrackInfo();
       const url = trackInfo.bestUrl;
 
+      if (!url) {
+        // Once Netflix responds with the URL, the track list gets rebuilt and we end up back here
+        requestTrackFromNetflix(urlMovieId, selectedTrackId);
+        return;
+      }
+
       fetch(url).then(function(response) {
         if (response.ok) {
           return response.blob();
@@ -190,6 +201,72 @@
     }
 
     // NOTE: We don't call renderAndReconcile here, caller should do it to avoid recursive loop bug
+  }
+
+  // Netflix's internal player API. Fragile like everything else here, so callers catch errors.
+  function getNetflixPlayer() {
+    const videoPlayer = window.netflix?.appContext?.state?.playerApp?.getAPI?.()?.videoPlayer;
+    const sessionIds = videoPlayer?.getAllPlayerSessionIds?.() || [];
+    const sessionId = sessionIds.find(id => id.startsWith('watch')) || sessionIds[0];
+    return sessionId ? videoPlayer.getVideoPlayerBySessionId(sessionId) : null;
+  }
+
+  // Netflix only provides a track's download URL once its own player has loaded that track.
+  // So we briefly switch Netflix's player to the track; the response it gets is picked up by
+  // our JSON.parse hook. checkPendingTrackRequest then switches Netflix's subtitles back.
+  function requestTrackFromNetflix(movieId, trackId) {
+    const attemptKey = movieId + '/' + trackId;
+    if (trackRequestAttempts.has(attemptKey)) {
+      return; // only try once per track, so a failure can't cause a loop of requests
+    }
+
+    try {
+      const player = getNetflixPlayer();
+      const netflixTrack = player && player.getTextTrackList().find(t => t.trackId === trackId);
+      if (!netflixTrack) {
+        console.warn('Subadub: could not ask Netflix to load subtitle track', trackId);
+        return;
+      }
+
+      trackRequestAttempts.add(attemptKey);
+      // If a request is already pending, keep the track the user originally had
+      const restoreTrackId = (pendingTrackRequest && pendingTrackRequest.movieId === movieId) ?
+        pendingTrackRequest.restoreTrackId : player.getTextTrack()?.trackId;
+      pendingTrackRequest = {movieId, trackId, restoreTrackId, startTime: Date.now()};
+      player.setTextTrack(netflixTrack);
+    } catch (e) {
+      console.warn('Subadub: error asking Netflix to load subtitle track', e);
+    }
+  }
+
+  // Called by the poll loop. Once Netflix has switched to the requested track and we have its
+  // URL (or we've waited too long), switch Netflix's own subtitles back to what they were.
+  function checkPendingTrackRequest() {
+    if (!pendingTrackRequest) {
+      return;
+    }
+
+    const {movieId, trackId, restoreTrackId, startTime} = pendingTrackRequest;
+    if (movieId !== urlMovieId) {
+      pendingTrackRequest = null; // moved on to another title
+      return;
+    }
+
+    try {
+      const player = getNetflixPlayer();
+      const urlArrived = (trackListCache.get(movieId) || []).some(t => t.id === trackId && t.bestUrl);
+      const netflixSwitched = player && (player.getTextTrack()?.trackId === trackId);
+      if ((urlArrived && netflixSwitched) || (Date.now() - startTime > TRACK_REQUEST_TIMEOUT_MS)) {
+        pendingTrackRequest = null;
+        const restoreTrack = player && player.getTextTrackList().find(t => t.trackId === restoreTrackId);
+        if (restoreTrack) {
+          player.setTextTrack(restoreTrack);
+        }
+      }
+    } catch (e) {
+      pendingTrackRequest = null;
+      console.warn('Subadub: error restoring Netflix subtitle track', e);
+    }
   }
 
   function enableDownloadButton() {
@@ -282,6 +359,18 @@
     }
   }
 
+  function updateSubsPosition() {
+    const buttonElem = document.getElementById(SUBS_POSITION_BUTTON_ID);
+    if (buttonElem) {
+      buttonElem.textContent = subsAtTop ? 'Subs to Bottom' : 'Subs to Top';
+    }
+    const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
+    if (subsElem) {
+      subsElem.style.top = subsAtTop ? '10vh' : 'auto';
+      subsElem.style.bottom = subsAtTop ? 'auto' : '20vh';
+    }
+  }
+
   function renderAndReconcile() {
     function addSubsList(tracks) {
       const toggleDisplayButtonElem = document.createElement('button');
@@ -292,6 +381,16 @@
         showSubsState = !showSubsState;
         localStorage.setItem(SHOW_SUBS_STATE_STORAGE_KEY, showSubsState);
         updateToggleDisplay();
+      }, false);
+
+      const positionButtonElem = document.createElement('button');
+      positionButtonElem.id = SUBS_POSITION_BUTTON_ID;
+      positionButtonElem.style.cssText = 'margin: 5px; border: none; color: black; width: 8em';
+      positionButtonElem.addEventListener('click', function(e) {
+        e.preventDefault();
+        subsAtTop = !subsAtTop;
+        localStorage.setItem(SUBS_POSITION_STORAGE_KEY, subsAtTop ? 'top' : 'bottom');
+        updateSubsPosition();
       }, false);
 
       const selectElem = document.createElement('select');
@@ -329,6 +428,7 @@
       const panelElem = document.createElement('div');
       panelElem.style.cssText = 'position: absolute; z-index: 1000; top: 0; right: 0; font-size: 16px; color: white; pointer-events: auto';
       panelElem.appendChild(toggleDisplayButtonElem);
+      panelElem.appendChild(positionButtonElem);
       panelElem.appendChild(selectElem);
       panelElem.appendChild(downloadButtonElem);
 
@@ -340,6 +440,7 @@
       document.body.appendChild(containerElem);
 
       updateToggleDisplay();
+      updateSubsPosition();
       disableDownloadButton();
 
       handleSubsListSetOrChange(selectElem);
@@ -368,7 +469,7 @@
 
       const customSubsElem = document.createElement('div');
       customSubsElem.id = CUSTOM_SUBS_ELEM_ID;
-      customSubsElem.style.cssText = 'position: absolute; bottom: 20vh; left: 0; right: 0; color: white; font-size: 3vw; text-align: center; user-select: text; -moz-user-select: text; z-index: 100; pointer-events: none';
+      customSubsElem.style.cssText = 'position: absolute; left: 0; right: 0; color: white; font-size: 3vw; text-align: center; user-select: text; -moz-user-select: text; z-index: 100; pointer-events: none';
 
       trackElem.addEventListener('cuechange', function(e) {
         // Remove all children
@@ -394,6 +495,7 @@
       playerElem.appendChild(customSubsElem);
 
       updateToggleDisplay();
+      updateSubsPosition();
     }
 
     function removeTrackElem() {
@@ -530,6 +632,7 @@
     }
 
     renderAndReconcile();
+    checkPendingTrackRequest();
   }, POLL_INTERVAL_MS);
 
   document.body.addEventListener('keydown', function(e) {
