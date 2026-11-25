@@ -1,4 +1,8 @@
 (function initializeSubadub() {
+  // Set to true to log details of the subtitle data Subadub sees from Netflix.
+  // Useful when a Netflix change breaks things.
+  const DEBUG = false;
+
   const POLL_INTERVAL_MS = 500;
   const MANIFEST_URL = "/manifest";
   const WEBVTT_FMT = 'webvtt-lssdh-ios8';
@@ -70,34 +74,38 @@
     return simpleText;
   }
 
+  function debugLog(...args) {
+    if (DEBUG) {
+      console.log('Subadub:', ...args);
+    }
+  }
+
   function extractMovieTextTracks(movieObj) {
     const movieId = movieObj.movieId;
 
     const usableTracks = [];
-    console.log('textTracks', movieObj.textTracks);
+    debugLog('textTracks', movieObj.textTracks);
     for (const track of movieObj.textTracks) {
-      console.log(track.language);
       if (track.isForcedNarrative || track.isNoneTrack) {
-        console.log('A');
+        debugLog(track.language, 'skipped: forced narrative or "none" track');
         continue; // don't want these
       }
 
       if (!track.downloadables) {
-        console.log('B');
+        debugLog(track.language, 'skipped: no downloadables');
         continue;
       }
 
       const webvttDL = track.downloadables[WEBVTT_FMT];
-      console.log('webvttDL', webvttDL);
       if (!webvttDL || !webvttDL.urls) {
-        console.log('C');
+        debugLog(track.language, 'skipped: no WebVTT downloadable', track.downloadables);
         continue;
       }
 
       const bestUrl = webvttDL.urls[0].url;
 
       if (!bestUrl) {
-        console.log('D');
+        debugLog(track.language, 'skipped: no WebVTT URL', webvttDL);
         continue;
       }
 
@@ -112,7 +120,7 @@
       });
     }
 
-    console.log('CACHING MOVIE TRACKS', movieId, usableTracks);
+    debugLog('caching movie tracks', movieId, usableTracks);
     trackListCache.set(movieId, usableTracks);
     renderAndReconcile();
   }
@@ -530,7 +538,7 @@
       const subsElem = document.getElementById(CUSTOM_SUBS_ELEM_ID);
       if (subsElem) {
         const pieces = [];
-        for (child of [...subsElem.children]) {
+        for (const child of [...subsElem.children]) {
           pieces.push(child.textContent); // copy as plain text
         }
         const text = pieces.join('\n');
