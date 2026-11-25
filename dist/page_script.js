@@ -8,7 +8,9 @@
   const TRACK_ELEM_ID = 'subadub-track';
   const DOWNLOAD_BUTTON_ID = 'subadub-download';
   const CUSTOM_SUBS_ELEM_ID = 'subadub-custom-subs';
-  const SHOW_SUBS_STATE_STORAGE_KEY = 'subadub.showSubsState'; 
+  const SHOW_SUBS_STATE_STORAGE_KEY = 'subadub.showSubsState';
+  const PREFERRED_LANGUAGE_STORAGE_KEY = 'subadub.preferredLanguage';
+  const PREFERRED_IS_CC_STORAGE_KEY = 'subadub.preferredIsClosedCaptions';
 
   const NETFLIX_PROFILES = [
     'heaac-2-dash',
@@ -125,6 +127,30 @@
       throw new Error('internal error, no matching track id');
     }
     return matchingTracks[0];
+  }
+
+  // Remember the user's track choice so it carries over to the next episode/title
+  function savePreferredTrack(track) {
+    localStorage.setItem(PREFERRED_LANGUAGE_STORAGE_KEY, track.language);
+    localStorage.setItem(PREFERRED_IS_CC_STORAGE_KEY, track.isClosedCaptions);
+  }
+
+  function pickInitialTrack(tracks) {
+    const preferredLanguage = localStorage.getItem(PREFERRED_LANGUAGE_STORAGE_KEY);
+    if (preferredLanguage) {
+      const preferredIsCC = localStorage.getItem(PREFERRED_IS_CC_STORAGE_KEY) === 'true';
+      const sameLanguageTracks = tracks.filter(track => track.language === preferredLanguage);
+      const exactMatch = sameLanguageTracks.find(track => track.isClosedCaptions === preferredIsCC);
+      if (exactMatch) {
+        return exactMatch;
+      }
+      if (sameLanguageTracks.length > 0) {
+        return sameLanguageTracks[0];
+      }
+    }
+
+    // No usable preference, so default to the first closed-captions track
+    return tracks.find(track => track.isClosedCaptions);
   }
 
   function handleSubsListSetOrChange(selectElem) {
@@ -264,22 +290,22 @@
       selectElem.style.cssText = 'color: black; margin: 5px';
       selectElem.addEventListener('change', function(e) {
         handleSubsListSetOrChange(e.target);
+        const chosenTrack = tracks.find(track => track.id === e.target.value);
+        if (chosenTrack) {
+          savePreferredTrack(chosenTrack);
+        }
         renderAndReconcile();
       }, false);
 
-      let firstCCTrackId;
       for (const track of tracks) {
         const optElem = document.createElement('option');
         optElem.value = track.id;
         optElem.textContent = track.languageDescription + (track.isClosedCaptions ? ' [CC]' : '');
         selectElem.appendChild(optElem);
-
-        if (track.isClosedCaptions && !firstCCTrackId) {
-          firstCCTrackId = track.id;
-        }
       }
-      if (firstCCTrackId) {
-        selectElem.value = firstCCTrackId;
+      const initialTrack = pickInitialTrack(tracks);
+      if (initialTrack) {
+        selectElem.value = initialTrack.id;
       }
 
       const downloadButtonElem = document.createElement('button');
@@ -427,7 +453,15 @@
     return key === 'profiles' || value.some(item => NETFLIX_PROFILES.includes(item))
   }
 
-  function findSubtitlesProperty(obj) {
+  function findSubtitlesProperty(obj, visited = new WeakSet()) {
+    // Skip already-visited objects so cyclic structures (which other code on the page,
+    // e.g. other extensions, may pass to JSON.stringify) can't cause infinite recursion.
+    // See issue #30.
+    if (!obj || typeof obj !== 'object' || visited.has(obj)) {
+      return null;
+    }
+    visited.add(obj);
+
     for (let key in obj) {
       let value = obj[key];
       if (Array.isArray(value)) {
@@ -436,7 +470,7 @@
           }
       }
       if (typeof value === 'object') {
-        const prop = findSubtitlesProperty(value);
+        const prop = findSubtitlesProperty(value, visited);
         if (prop) {
             return prop;
         }
@@ -449,9 +483,14 @@
   JSON.stringify = function(value) {
     // Don't hardcode property names here because Netflix
     // changes them a lot; search instead
-    let prop = findSubtitlesProperty(value);
-    if (prop) {
-      prop.unshift(WEBVTT_FMT);
+    try {
+      let prop = findSubtitlesProperty(value);
+      if (prop) {
+        prop.unshift(WEBVTT_FMT);
+      }
+    } catch (e) {
+      // Never let our search break the page's own JSON.stringify calls
+      console.warn('Subadub: error while searching for subtitles property', e);
     }
     return originalStringify.apply(this, arguments);
   };
